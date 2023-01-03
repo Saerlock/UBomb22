@@ -6,8 +6,12 @@ package fr.ubx.poo.ubomb.engine;
 
 import fr.ubx.poo.ubomb.game.Direction;
 import fr.ubx.poo.ubomb.game.Game;
+import fr.ubx.poo.ubomb.game.Level;
 import fr.ubx.poo.ubomb.game.Position;
 import fr.ubx.poo.ubomb.go.character.Player;
+import fr.ubx.poo.ubomb.go.decor.*;
+import fr.ubx.poo.ubomb.go.decor.bonus.*;
+import fr.ubx.poo.ubomb.launcher.Entity;
 import fr.ubx.poo.ubomb.view.ImageResource;
 import fr.ubx.poo.ubomb.view.Sprite;
 import fr.ubx.poo.ubomb.view.SpriteFactory;
@@ -142,6 +146,17 @@ public final class GameEngine {
             player.requestMove(Direction.RIGHT);
         } else if (input.isMoveUp()) {
             player.requestMove(Direction.UP);
+        } else if (input.isKey()) {
+            try {
+                DoorNextOpened newDoor = game.requestOpenDoor();
+                if (newDoor != null) {
+                    sprites.add(SpriteFactory.create(layer, newDoor));
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else if (input.isBomb()) {
+            player.dropBomb();
         }
         input.clear();
     }
@@ -171,6 +186,103 @@ public final class GameEngine {
         if (player.getLives() == 0) {
             gameLoop.stop();
             showMessage("Perdu!", Color.RED);
+        }
+
+        if (this.game.grid().get(player.getPosition()) instanceof Princess) {
+            gameLoop.stop();
+            showMessage("Gagné!", Color.GREEN);
+        }
+
+        if (this.game.grid().get(player.getPosition()) instanceof Monster) {
+            if (!player.invincibilityTimer().isRunning()){
+                player.looseLife();
+                player.invincibilityTimer().start();
+                System.out.println(player.getLives());
+            }
+        }
+
+        if (this.game.grid().get(Level.nextPosition(player.getPosition(), player.getDirection())) instanceof Box b) {
+            Position posBox = Level.nextPosition(player.getPosition(), player.getDirection());
+            Position nextPosBox = Level.nextPosition(posBox, player.getDirection());
+            if (this.game.grid().inside(nextPosBox) && this.game.grid().get(nextPosBox) == null) {
+                this.game.grid().remove(posBox);
+                b.remove();
+                Box newBox = new Box(nextPosBox);
+                this.game.grid().set(nextPosBox, newBox);
+                sprites.add(SpriteFactory.create(layer, newBox));
+            }
+        }
+
+        if (this.game.grid().get(player.getPosition()) instanceof Key s) {
+            player.incKeyCount();
+            this.game.grid().remove(player.getPosition());
+            s.remove();
+        }
+
+        if (this.game.grid().get(player.getPosition()) instanceof Heart h) {
+            player.gainLife();
+            this.game.grid().remove(player.getPosition());
+            h.remove();
+        }
+
+        if (this.game.grid().get(player.getPosition()) instanceof BombNumberInc b) {
+            player.incBombCount();
+            this.game.grid().remove(player.getPosition());
+            b.remove();
+        }
+
+        if (this.game.grid().get(player.getPosition()) instanceof BombNumberDec b) {
+            if (player.getBombCount() > 1) {
+                player.decBombCount();
+            }
+            this.game.grid().remove(player.getPosition());
+            b.remove();
+        }
+
+        if (this.game.grid().get(player.getPosition()) instanceof BombRangeInc b) {
+            player.incBombRange();
+            this.game.grid().remove(player.getPosition());
+            b.remove();
+        }
+
+        if (this.game.grid().get(player.getPosition()) instanceof BombRangeDec b) {
+            if (player.getBombRange() > 1) {
+                player.decBombRange();
+            }
+            this.game.grid().remove(player.getPosition());
+            b.remove();
+        }
+
+        if (player.canTakeDoor() && this.game.grid().get(player.getPosition()) instanceof DoorNextOpened) {
+            try {
+                cleanUpSprites.addAll(sprites);
+                gameLoop.stop();
+                this.game.changeGrid("up");
+                this.player.setPosition(this.game.grid().getDecorPosition(Entity.DoorPrevOpened));
+                this.player.setCanTakeDoor(false);
+                this.player.resetDirection();
+                initialize();
+                buildAndSetGameLoop();
+                gameLoop.start();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        if (player.canTakeDoor() && this.game.grid().get(player.getPosition()) instanceof DoorPrevOpened) {
+            try {
+                cleanUpSprites.addAll(sprites);
+                gameLoop.stop();
+                this.game.changeGrid("down");
+                this.player.setPosition(this.game.grid().getDecorPosition(Entity.DoorNextOpened));
+                this.player.setCanTakeDoor(false);
+                this.player.resetDirection();
+                initialize();
+                buildAndSetGameLoop();
+                gameLoop.start();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

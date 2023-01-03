@@ -3,6 +3,7 @@ package fr.ubx.poo.ubomb.view;
 import fr.ubx.poo.ubomb.engine.GameEngine;
 import fr.ubx.poo.ubomb.game.Game;
 import fr.ubx.poo.ubomb.launcher.GameLauncher;
+import fr.ubx.poo.ubomb.launcher.WorldParser;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
@@ -46,8 +47,9 @@ public class GameLauncherView extends BorderPane {
         loadItem.setOnAction(e -> {
             File file = fileChooser.showOpenDialog(stage);
             if (file != null) {
-                // TODO
-                System.err.println("[TODO] Not implemented");
+                Game game = GameLauncher.load(file);
+                GameEngine engine = new GameEngine(game, stage);
+                engine.start();
             }
         });
 

@@ -2,6 +2,7 @@ package fr.ubx.poo.ubomb.game;
 
 
 import fr.ubx.poo.ubomb.go.decor.Decor;
+import fr.ubx.poo.ubomb.launcher.Entity;
 
 import java.util.Collection;
 
@@ -20,4 +21,6 @@ public interface Grid {
     boolean inside(Position nextPos);
 
     void set(Position position, Decor decor);
+
+    public Position getDecorPosition(Entity e);
 }
